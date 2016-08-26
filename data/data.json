@@ -1,0 +1,136 @@
+{
+	"data":[{
+		"id":"table",
+		"name":"Table"
+		},{
+			"id":"button",
+			"name":"Table"
+		},{
+			"id":"inputText",
+			"name":"Input Text"
+		},{
+			"id":"div",
+			"name":"Div"
+		},{
+			"id":"image",
+			"name":"Image"
+		}],
+	"actions":{
+			"image":[{
+				"id": "delete",
+				"text": "Delete",
+				"title": "Delete the element from DOM"
+			}],
+			"other":[{ 
+				"id": "delete",
+				"text": "Delete",
+				"title": "Delete the element from DOM"
+			}, {
+				"id": "backgroundColor",
+				"text": "Background Color",
+				"title": "Change background color for current element"
+			}, {
+				"id": "fontColor",
+				"text": "Font Color",
+				"title": "Change font color for current element"
+			}, {
+				"id": "increaseFontSize",
+				"text": "Font Size +",
+				"title": "Increase font size for current element"
+			}, {
+				"id": "decreaseFontSize",
+				"text": "Font Size -",
+				"title": "Decrease font size for current element"
+			}]
+		},
+	"options":{
+		"table":{
+			"data":{
+				"text": "Portfolio List",
+				"title": "Show all portfolios for user"
+			}
+		},
+		"inputText":{
+			"data":{
+				"text": "Account Name"
+			}
+		},
+		"div":{
+			"data":{
+				"text": "<div><div><span>&copy;2016 Morningstar Inc. All rights reserved. <a href=&quot;/feedback.php&quot;>Feedback</a></span></div></div>"
+			}
+		},
+		"image":{
+			"data":{
+				"image": "http://pond.morningstar.com/img/morningstar.png",
+				"title": "Logo of Morninstar"
+			}
+		},
+		"table":{
+			"data":{
+				"rows": "4",
+
+		"cols": "4",
+		
+		"cells": [{
+
+			"row": "0",
+
+			"col": "0",
+
+			"data": "Col 1"
+	
+		}, {
+			"row": "0",
+			"col": "1",
+			"data": "Col 2"
+		}, {
+			"row": "0",
+			"col": "2",
+			"data": "Col 3"
+		}, {
+			"row": "0",
+			"col": "3",
+			"data": "Col 4"
+		}, {
+			"row": "1",
+			"col": "0",
+			"data": "A"
+		}, {
+			"row": "1",
+			"col": "1",
+			"data": "B"
+		}, {
+			"row": "1",
+			"col": "2",
+			"data": "C"
+		}, {
+			"row": "2",
+			"col": "1",
+			"data": "D"
+		}, {
+			"row": "2",
+			"col": "2",
+			"data": "E"
+		}, {
+			"row": "2",
+			"col": "3",
+			"data": "F"
+		}, {
+			"row": "3",
+			"col": "0",
+			"data": "H"
+		}, {
+			"row": "3",
+			"col": "2",
+			"data": "I"
+		}, {
+			"row": "3",
+			"col": "3",
+			"data": "J"
+		}]
+
+			}
+		}
+	}
+}
