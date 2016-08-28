@@ -106,7 +106,8 @@ app.get('/api/html/elements/:id/actions',function(req, res){ //Restful Get方法
 
 app.use(express.static('app'));
 
-app.listen(3000);
-
-
-console.log('localhost:3000/ is listening')
+var server = app.listen(3000,function(){
+	  var host = server.address().address
+  var port = server.address().port
+  console.log("应用实例，访问地址为 http://%s:%s", host, port)
+});
