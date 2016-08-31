@@ -12,6 +12,8 @@ var url = require('url');
 var uuid = require('node-uuid')
 var app = express();
 
+var cors= require('cors');
+app.use(cors());
 app.get('/', function(req, res){
   res.send('hello world');
 });

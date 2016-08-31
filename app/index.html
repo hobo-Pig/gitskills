@@ -1,42 +1,270 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
+
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Template</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+    body {
+        padding: 30px;
+    }
+    
+    .dropdown>.dropdown-menu {
+        position: absolute;
+        margin-bottom: 5px;
+        top: 34px;
+    }
+    
+    .dropdown:after {
+        clear: left;
+    }
+    
+    .dropdown>.dropdown-menu.show {
+        display: block;
+    }
+    /* .dropdown>.dropdown-toggle {
+          float: left;
+      }*/
+    
+    table {
+        font-family: verdana, arial, sans-serif;
+        font-size: 11px;
+        color: #333333;
+        border-width: 1px;
+        border-color: #a9c6c9;
+        border-collapse: collapse;
+    }
+    
+    table th {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #a9c6c9;
+    }
+    
+    table td {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #a9c6c9;
+    }
+    
+    table tr:nth-child(odd) td {
+        background-color: #d4e3e5;
+    }
+    
+    table tr:nth-child(even) td {
+        background-color: #c3dde0;
+    }
+    </style>
+</head>
 
-  </head>
-  <body>
-<div class="dropdown">
-  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-    Dropdown
-    <span class="caret"></span>
-  </button>
-  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-    <li><a href="#">Action</a></li>
-    <li><a href="#">Another action</a></li>
-    <li><a href="#">Something else here</a></li>
-    <li><a href="#">Separated link</a></li>
-  </ul>
-</div>
-<!-- jquery.ajax-cross-origin.min.js -->
+<body>
+    <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+            create
+            <span class="caret"></span>
+        </button>
+        <script type="text/template" id="tpl-createBtn">
+            <ul id="btnListView" class="dropdown-menu" aria-labelledby="dropdownMenu">
+                <%_.each(obj,function(e,i){%>
+                    <li>
+                        <a href="javascript:void 0;" class="dropdown-menu-<%= e.id%>">
+                            <%= e.text%>
+                        </a>
+                    </li>
+                    <%})%>
+            </ul>
+        </script>
+        <!--   <script type="text/template" id="tpl-table">  
+            <table>
+              
+            </table>
+        </script> -->
+    </div>
+    <div id="content">
+    </div>
+    <!-- jquery.ajax-cross-origin.min.js -->
     <script src="js/jquery.min.js"></script>
+    <script src="js/underscore.js"></script>
+    <script src="js/backbone.js"></script>
     <script type="text/javascript">
-    	 $(document).ready(function(){
-    	 	$.ajax({
-    	 		type:'get',
-    	 		url:'/api/html/elements/div/actions',
-    	 		success:function(){
-    	 			console.log(arguments);
-    	 		},
-    	 		error:function(){
-    	 			console.log(arguments);
-    	 		}
-    	 	});
-    	 });
-    	
+    var domain = 'http://admadevwb8001:8001/api/html/elements';
+    //var domain = 'http://localhost:3000/api/html/elements';
+
+    var dataAPI = {
+        'createBtn': '',
+        'btnAction': {
+            'button': '/button/actions',
+            'inputText': '/inputText/actions',
+            'table': '/table/actions',
+            'div': '/div/actions',
+            'image': '/image/actions',
+        },
+        'data': {
+            'button': '/button/data',
+            'inputText': '/inputText/data',
+            'table': '/table/data',
+            'div': '/div/data',
+            'image': '/image/data',
+        }
+    }
+
+    $(document).ready(function() {
+        var createBtn = Backbone.Model.extend({
+            initialize: function() {
+                //var deferred = jQuery.Deferred();
+                var self = this;
+                $.ajax({
+                    type: 'get',
+                    url: domain
+                }).done(function(res) {
+                    self.set({
+                        btnList: res.data,
+                    });
+                }).fail(function(err) {
+                    console.info(err);
+                });
+            }
+        });
+
+        var TableModel = Backbone.Model.extend({
+            initialize: function() {
+                //var deferred = jQuery.Deferred();
+                var self = this;
+                this.data = $.ajax({
+                    type: 'get',
+                    url: domain + dataAPI.data.table
+                }).done($.proxy(this.init, this)).fail(function(err) {
+                    console.info(err);
+                });
+            }
+        });
+
+        var BtnListView = Backbone.View.extend({
+            el:'#content',
+            template: _.template($('#tpl-createBtn').html()),
+            initialize: function() {
+                this.render();
+            },
+            render: function() {
+                var self = this;
+                this.model.on('change:btnList', function() {
+                    var btnList = self.model.get('btnList');
+                    self.$el.append(self.template(self.model.attributes.btnList));
+                });
+            },
+            toggle: function() {
+                if (!$('.dropdown-menu').hasClass('show')) {
+                    $('.dropdown-menu').addClass('show');
+                } else {
+                    $('.dropdown-menu').removeClass('show');
+                }
+            },
+            events: {
+                'click .dropdown-toggle': 'toggle',
+                'click .dropdown-menu .dropdown-menu-table': 'createTable',
+                'click .dropdown-menu .dropdown-menu-div': 'show',
+            },
+            createTable: (function() {
+                var instance;
+                function Table() {
+                    var self = this;
+                    this.rowCount = 0;
+                    this.cellCount = 0;
+                    this.model = new TableModel();
+                    // = $.ajax({
+                    //     url: domain + dataAPI.data.table
+                    // }).done($.proxy(this.init, this));//只取一次
+                }
+                Table.prototype = {
+                    constructor: Table,
+                    init: function(res) {
+                        this.rowCount = res.data.rows;
+                        this.cellCount = res.data.cols;
+                        this.cellData = res.data.cells;
+
+                        var sortResult = this.sort();
+                        this.newTableTemplate()
+                    },
+                    sort: function() {
+                        this.sortResult = this.cellData.sort(function(td0, td1) {
+                            if (td0.row === td1.row) {
+                                return td0.col - td1.col;
+                            } else {
+                                return td0.row - td1.row;
+                            }
+                        });
+                    },
+                    newTableTemplate: function() {
+                        var table = document.createElement('table')
+                        var sortResult = this.sortResult;  
+                        var oFragmeng = document.createDocumentFragment();
+
+                        for (var i = 0; i < this.rowCount; i++) {
+                            var tr = document.createElement('tr')
+                            for (var j = 0; j < this.cellCount; j++) {
+                                var td = document.createElement('td');
+                                if (sortResult[i * this.rowCount + j]) {
+                                    oText = document.createTextNode(sortResult[i * this.rowCount + j].data);
+                                } else {
+                                    oText = document.createTextNode('');
+                                }
+                                td.appendChild(oText);
+                                tr.appendChild(td);
+                            }
+                            oFragmeng.appendChild(tr);
+                        }
+                        table.appendChild(oFragmeng);
+                        this.table = table;
+                    }
+                };
+                return function() {
+                    var self = this;
+                    if (instance&&instance.table) {
+                        $(instance.table).clone().appendTo('#content');
+                        this.toggle();
+                        return instance;
+                    } else {
+                         instance = new Table();
+                         instance.model.data.done(function(){
+                            $(instance.table).clone().appendTo('#content');
+                            self.toggle();
+                        });
+                    }
+                }
+            })(),
+        });
+
+        var btnListView = new BtnListView({
+            el: $('.dropdown'),
+            model: new createBtn({
+                ele: $('.dropdown-menu ')
+            })
+        });
+
+
+    });
+    
+    var Popup =  function() {
+        this.curTemplate = null;
+        this.fontSize = '11px';
+        this.initialize()
+    }
+    Popup.prototype = {
+      constructor: Popup,
+      initialize: function() {
+          this.bindEvents();
+      },
+      bindEvents: function() {
+
+      }
+    }
+  
     </script>
-  </body>
+</body>
+
 </html>

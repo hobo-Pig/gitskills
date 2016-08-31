@@ -1,19 +1,19 @@
 {
 	"data":[{
 		"id":"table",
-		"name":"Table"
+		"text":"Table"
 		},{
 			"id":"button",
-			"name":"Table"
+			"text":"Button"
 		},{
 			"id":"inputText",
-			"name":"Input Text"
+			"text":"Input Text"
 		},{
 			"id":"div",
-			"name":"Div"
+			"text":"Div"
 		},{
 			"id":"image",
-			"name":"Image"
+			"text":"Image"
 		}],
 	"actions":{
 			"image":[{
