@@ -1455,7 +1455,6 @@
     }
 
     var template = function(data) {
-      console.log(data);
       return render.call(this, data, _);
     };
 

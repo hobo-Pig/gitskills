@@ -22,7 +22,7 @@
         clear: left;
     }
     
-    .dropdown>.dropdown-menu.show {
+    .dropdown.show>.dropdown-menu{
         display: block;
     }
     /* .dropdown>.dropdown-toggle {
@@ -63,7 +63,7 @@
 </head>
 
 <body id="mvc-app">
-    <div class="dropdown">
+    <div class="dropdown createBtn">
         <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
             create
             <span class="caret"></span>
@@ -79,6 +79,7 @@
                     <%})%>
             </ul>
         </script>
+        
         <!--   <script type="text/template" id="tpl-table">  
             <table>
               
@@ -88,12 +89,31 @@
     <div id="content">
         <ul id="template-list"></ul>
     </div>
+    <script type="text/template" id="tpl-popup">
+            <ul id="" class="dropdown-menu" aria-labelledby="dropdownMenu">
+                <%_.each(obj,function(e,i){%>
+                    <li>
+                        <a href="javascript:void 0;" class="actions-item <%=e.id%>" title="<%=e.title%>">
+                            <%= e.text%>
+                        </a>
+                    </li>
+                    <%})%>
+            </ul>
+    </script>
+    <div class="dropdown  popUp" style="position: absolute;z-index:999;">
+    </div>
     <!-- jquery.ajax-cross-origin.min.js -->
     <script src="js/jquery.min.js"></script>
     <script src="js/underscore.js"></script>
     <script src="js/backbone.js"></script>
-<!--     <script src="js/backbone.localStorage.js"></script>
- -->    <script type="text/javascript">
+    <script src="js/backbone.localStorage.js"></script>
+    <script src="js/actions.js"></script>
+    <script src="js/model/create-model.js"></script>
+    <script src="js/model/table-model.js"></script>
+    <script src="js/view/createBtn-view.js"></script>
+    <script src="js/view/table-view.js"></script>
+
+    <script type="text/javascript">
     //var domain = 'http://admadevwb8001:8001/api/html/elements';
     var domain = 'http://localhost:3000/api/html/elements';
 
@@ -116,215 +136,101 @@
     }
     var app = app || {};
     $(document).ready(function() {
-        var createBtn = Backbone.Model.extend({
-            initialize: function() {
-                //var deferred = jQuery.Deferred();
+        app.popupModel = Backbone.Model.extend({
+            defaultOption:{
+                url:dataAPI.btnAction,
+            },
+            initialize: function(options) {
                 var self = this;
-                $.ajax({
+                var defaultOption = $.extend(this.defaultOption,options);
+                console.log(options)
+                this.data = $.ajax({
                     type: 'get',
-                    url: domain
+                    url: domain+dataAPI.btnAction[defaultOption.url],
                 }).done(function(res) {
                     self.set({
-                        btnList: res.data,
+                        'actionList': res.data,
                     });
                 }).fail(function(err) {
                     console.info(err);
+                });;
+            },
+        })
+        app.popupView = Backbone.View.extend({
+            tagName:'div',
+            template: _.template($('#tpl-popup').html()),
+            events: {
+                'click .actions-item.delete': 'delete',
+                'click .actions-item.backgroundColor': 'backgroundColor',
+                'click .actions-item.fontColor': 'fontColor',
+                'click .actions-item.increaseFontSize': 'increaseFontSize',
+                'click .actions-item.decreaseFontSize': 'decreaseFontSize',
+            },
+            initialize: function() {
+                var self = this;
+                this.model.on('change:actionList', function(model,data) {
+                        self.$el.html(self.template(data));
+                })
+            },
+            render:function(){
+                //$('body').append(this.render().el)
+            },
+            delete:function(){
+                this.trigger('doActions','delete');
+            },
+            backgroundColor:function(){
+                this.trigger('doActions','backgroundColor');
+            },
+            fontColor:function(){
+                this.trigger('doActions','fontColor');
+            },
+            increaseFontSize:function(){
+                this.trigger('doActions','increaseFontSize');
+            },
+            decreaseFontSize:function(){
+                this.trigger('doActions','decreaseFontSize');
+            },
+            toggle:function(){
+              var self = this;
+              self.$el.addClass('show');
+            }
+        })
+
+        app.AppView = Backbone.View.extend({
+            el: '#mvc-app',
+            events: {
+                //'click #template-list': 'showPopUp'
+            },
+            initialize: function() {
+                this.initializeCreateBtnView();//管理btnView
+                this.$list = $('#template-list');
+                this.listenTo(app.tables, 'add', this.addOne, this);//坚挺tables 集合add事件
+            },
+            initializeCreateBtnView: function() {
+                this.creatBtnView = new app.creatBtnView({
+                    el: '.createBtn',
+                    model: new createBtn()
                 });
+            },
+            addOne: function(model) {
+                var type = model.get('className');
+                if (type == 'dropdown-menu-table') {
+                    var view = new app.TableView({
+                        model: model,
+                    });
+                    console.log(view);
+                } else {
+
+                }
+                this.$list.append(view.render().el);
+                this.creatBtnView.toggle();
             }
         });
 
-        // TableModel
-        app.TableModel = Backbone.Model.extend({
-            initialize: function() {
-                var self = this;
-                this.data = $.ajax({
-                    type: 'get',
-                    url: domain + dataAPI.data.table
-                }).done(function(res) {
-                    console.log(res);
-                    self.trigger('tableData',res);
-                }).fail(function(err) {
-                    console.info(err);
-                });
-            },
-        });
-
-        // Tables Collection
-        var Tables = Backbone.Collection.extend({
-            model: app.TableModel,
-            nextOrder: function() {
-                return this.length ? this.last().get('order') + 1 : 1;
-            },
-            comparator: 'order',
-
-        });
-        //app.tables = new Tables();
-
-
-        // Table Item View
-        app.TableView = Backbone.View.extend({
-            tagName: 'table',
-            //template: _.template($('#item-template').html()),
-            events: {
-                'click .item-table': 'showAction'
-            },
-            initialize: function() {
-                this.listenTo(this.model, 'change', this.createTableTemplate);
-                this.render();
-            },
-            render: function() {
-                if (this.model.changed.id !== undefined) {
-                    return;
-                }
-                var self = this
-                this.model.on('tableData',function(res){
-                    var table = self.createTableTemplate(res);
-                    self.$el.html(table);
-                })
-                return this;
-            },
-            delete: function() {
-                console.log('delete')
-            },
-            createTableTemplate:(function() {
-                var instance;
-                function Table(data) {
-                    this.rowCount = 0;
-                    this.cellCount = 0;
-                    this.data = data; //只取一次
-                    this.init(data);
-                }
-                Table.prototype = {
-                    constructor: Table,
-                    init: function(res) {
-                        this.rowCount = res.data.rows;
-                        this.cellCount = res.data.cols;
-                        this.cellData = res.data.cells;
-
-                        var sortResult = this.sort();
-                        this.newTableTemplate()
-                    },
-                    sort: function() {
-                        this.sortResult = this.cellData.sort(function(td0, td1) {
-                            if (td0.row === td1.row) {
-                                return td0.col - td1.col;
-                            } else {
-                                return td0.row - td1.row;
-                            }
-                        });
-                    },
-                    newTableTemplate: function() {
-                        var sortResult = this.sortResult;
-                        var oFragmeng = document.createDocumentFragment();
-
-                        for (var i = 0; i < this.rowCount; i++) {
-                            var tr = document.createElement('tr')
-                            for (var j = 0; j < this.cellCount; j++) {
-                                var td = document.createElement('td');
-                                if (sortResult[i * this.rowCount + j]) {
-                                    oText = document.createTextNode(sortResult[i * this.rowCount + j].data);
-                                } else {
-                                    oText = document.createTextNode('');
-                                }
-                                td.appendChild(oText);
-                                tr.appendChild(td);
-                            }
-                            oFragmeng.appendChild(tr);
-                        }
-                        this.table = oFragmeng;
-                    }
-                };
-                return function(data) {
-                    var self = this;
-                    if (instance && instance.table) {
-                        return instance.table;
-                    } else {
-                        var table = new Table(data).table;
-                        return table;
-                    }
-                }
-            })()
-        });
-
-        app.creatBtnView = Backbone.View.extend({
-            template: _.template($('#tpl-createBtn').html()),
-            initialize: function() {
-                this.$list = $('.template-list');
-                this.render();
-            },
-            render: function() {
-                var self = this;
-                this.model.on('change:btnList', function() {
-                    var btnList = self.model.get('btnList');
-                    self.$el.append(self.template(self.model.attributes.btnList));
-                });
-            },
-            toggle: function() {
-                if (!$('.dropdown-menu').hasClass('show')) {
-                    $('.dropdown-menu').addClass('show');
-                } else {
-                    $('.dropdown-menu').removeClass('show');
-                }
-            },
-            events: {
-                'click .dropdown-toggle': 'toggle',
-                'click .dropdown-menu .dropdown-menu-table': 'createHandler',
-                'click .dropdown-menu .dropdown-menu-div': 'show',
-            },
-            createHandler: function() {
-                this.trigger('create');
-            },
-        });
-
-        app.AppView = Backbone.View.extend({
-            el:'#mvc-app',
-            events: {
-                'click .toggle': 'toggle'
-            },
-            initialize:function(){
-                this.initializeCreateBtnView();
-                this.$list = $('#template-list');
-                //this.listenTo(app.tables, 'add', this.addOne);
-            },
-            initializeCreateBtnView:function(){
-                this.creatBtnView = new app.creatBtnView({
-                    el: $('.dropdown'),
-                    model:new createBtn({
-                        ele: $('.dropdown-menu ')
-                    })
-                });
-                this.creatBtnView.on('create', this.addOne, this);
-            },
-            addOne: function() {
-                console.log('addOne')
-                var view = new app.TableView({
-                    model: new app.TableModel(),
-                });
-                this.$list.append(view.el);
-                this.creatBtnView.toggle();
-            },
-        });
-
-        new app.AppView();
+        appView =  new app.AppView();
+        appView.fontSize ='11px';
 
     });
-
-
-
-    var Popup = function() {
-        this.curTemplate = null;
-        this.fontSize = '11px';
-        this.initialize()
-    }
-    Popup.prototype = {
-        constructor: Popup,
-        initialize: function() {
-            this.bindEvents();
-        },
-        bindEvents: function() {
-
-        }
-    }
     </script>
 </body>
 
