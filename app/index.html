@@ -231,6 +231,16 @@
         appView.fontSize ='11px';
 
     });
+    $(function(){
+            var domain = 'http://localhost:3000/';
+             jQuery.getJSON(domain + "?callback=?", function(data){
+                alert("Symbol:");
+            }); 
+            
+    })
+    function testJSONP(){
+        console.log('delete success');
+    }
     </script>
 </body>
 
