@@ -14,6 +14,9 @@
 		},{
 			"id":"image",
 			"text":"Image"
+		},{
+			"id":"button",
+			"text":"Button"
 		}],
 	"actions":{
 			"image":[{
@@ -48,6 +51,12 @@
 			"data":{
 				"text": "Portfolio List",
 				"title": "Show all portfolios for user"
+			}
+		},
+		"button":{
+			"data":{
+				"text": "button",
+				"title": "this is button"
 			}
 		},
 		"inputText":{
