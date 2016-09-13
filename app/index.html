@@ -59,6 +59,11 @@
     table tr:nth-child(even) td {
         background-color: #c3dde0;
     }
+    
+    .box-selected {
+        border: 1px solid blue;
+        display: inline-block;
+    }
     </style>
 </head>
 
@@ -184,6 +189,32 @@
                     var tplType = $(this).data('id');
                     self.createTplhandler(tplType);
                 });
+                $('body').delegate('[tpl]', 'click', function(e) {
+                    var tplType = $(this).attr('tpl');
+                    var scrollTop = document.documentElement.scrollTop || window.pageYOffset || document.body.scrollTop;
+                    //var self = $(this).data('template');
+                    // $(this).data('popup', new Popup({
+                    //     type: self.option.type,
+                    //     css: {
+                    //         top: e.clientY +
+                    //             scrollTop + 'px',
+                    //         left: e.clientX + 'px'
+                    //     },
+                    //     template:self
+                    // }));
+                    if ($(this).parent().hasClass('box-selected')) {
+                        $(this).unwrap('.box-selected');
+                    } else {
+                        $(this).wrap('<div class="box-selected"></div>');
+                    }
+                    e.stopPropagation();
+                    self.createPop(tplType, {
+                        top: e.clientY +
+                            scrollTop + 'px',
+                        left: e.clientX + 'px'
+                    });
+                });
+
                 this.model.on('createBtnData', function(data) {
                     self.showCreateBtn(data);
                 });
@@ -207,18 +238,24 @@
             createTemplate: function(tplType) {
                 var tplDOM = this.model.get('tplDOM') || {}
                 var templateData = this.model.get('templateData') || {};
-                if(!tplDOM[tplType]){
+                if (!tplDOM[tplType]) {
                     var renderMethod = this.renderTpl(tplType);
-                    var dom =  renderMethod(templateData[tplType]);
-                    $('#template-list').append(dom);
-                }else{
-
+                    tplDOM[tplType] = renderMethod(templateData[tplType]);
+                    this.model.get('tplDOM', tplDOM);
+                    tplDOM[tplType].attr('tpl', tplType);
+                    $('#template-list').append(tplDOM[tplType]);
+                } else {
+                    $('#template-list').append(tplDOM[tplType]);
                 }
             },
-            renderTpl:function(tplType){
+            renderTpl: function(tplType) {
                 var self = this;
                 var method = {
-                    table:self.createTable,
+                    table: self.createTable,
+                    div: self.createDiv,
+                    button: self.createButton,
+                    inputText: self.createInput,
+                    image: self.createImage,
                 }
                 return method[tplType];
             },
@@ -251,7 +288,7 @@
                     newTableTemplate: function() {
                         var sortResult = this.sortResult;
                         var oFragmeng = document.createDocumentFragment();
-                        var table = document.createElement('table');    
+                        var table = document.createElement('table');
                         for (var i = 0; i < this.rowCount; i++) {
                             var tr = document.createElement('tr');
                             for (var j = 0; j < this.cellCount; j++) {
@@ -270,8 +307,100 @@
                         this.table = table;
                     }
                 }
-                return new Table(data).table;
+                return $(new Table(data).table);
+            },
+            createDiv: function(data) {
+                return $(data.text);
+            },
+            createButton: function(data) {
+                return $('<button>').attr({
+                    title: data.title,
+                }).text(data.text);
+            },
+            createInput: function(data) {
+                var input = document.createElement('input');
+                input.setAttribute('placeholder', data.text)
+                return $(input);
+            },
+            createImage: function(data) {
+                return $('<img>').attr({
+                    src: data.image,
+                    title: data.title,
+                });
+            },
+            showPopup: function() {
+                console.log(121)
+            },
+            createPop: function(tplType, position) {
+                new popupView({
+                    tplType: tplType,
+                    position: position
+                });
             }
+        });
+
+        var popupModel = appModel.extend({
+            initialize: function(options) {
+                this.set('tplType', options.tplType);
+                this.reqActionsData(options.tplType);
+            },
+            reqActionsData: function(tplType) {
+                var self = this;
+                $.ajax({
+                    type: 'get',
+                    url: this.get('dataAPI').domain + this.get('dataAPI').btnAction[tplType]
+                }).done(function(res) {
+                    self.trigger('actionsData', res.data, tplType);
+                }).fail(function(err) {
+                    console.info(err);
+                });
+            }
+        });
+        var popupView = Backbone.View.extend({
+            initialize: function(options) {
+                this.position = options.position;
+                this.popTemplate = _.template($('#tpl-popup').html());
+                this.model = new popupModel({
+                    tplType: options.tplType
+                });
+                var self = this;
+                this.model.on('actionsData', function(data) {
+                    var dom = self.popTemplate(data)
+                    self.renderPop(dom);
+                    self.model.off('actionsData');
+                });
+            },
+            renderPop: function(dom) {
+                console.log(dom);
+            },
+            bindEvents: function() {
+                var self = this
+                $('#popupListView').delegate('a', 'click', function() {
+                    var method = $(this).attr('value').trim();
+                    console.log(method);
+                    self[method](self.option.template.dom);
+                    //self.hidePopUp();
+                });
+            },
+            delete: function(dom) {
+                dom.parent().remove();
+                this.dom.remove();
+            },
+            backgroundColor: function(dom) {
+                dom.css('backgroundColor', makeColor());
+            },
+            fontColor: function(dom) {
+                dom.css('color', makeColor());
+            },
+            increaseFontSize: function(dom) {
+                fontSize = parseInt(fontSize) + 1;
+                dom.css('fontSize', fontSize + 'px');
+            },
+            decreaseFontSize: function(dom) {
+                fontSize = parseInt(fontSize) - 1;
+                dom.css('fontSize', fontSize + 'px');
+            }
+
         });
 
         new appView({

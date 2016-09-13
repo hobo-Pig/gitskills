@@ -14,9 +14,6 @@
 		},{
 			"id":"image",
 			"text":"Image"
-		},{
-			"id":"button",
-			"text":"Button"
 		}],
 	"actions":{
 			"image":[{
