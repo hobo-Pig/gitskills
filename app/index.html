@@ -94,17 +94,18 @@
         <ul id="template-list"></ul>
     </div>
     <script type="text/template" id="tpl-popup">
-        <ul id="" class="dropdown-menu" aria-labelledby="dropdownMenu">
-            <%_.each(obj,function(e,i){%>
-                <li>
-                    <a href="javascript:void 0;" class="actions-item <%=e.id%>" title="<%=e.title%>">
-                        <%= e.text%>
-                    </a>
-                </li>
-                <%})%>
-        </ul>
+        <% var data = obj.data, tplType = obj.tplType;%>
+            <ul id="pop-<%=tplType%>" class="dropdown-menu" aria-labelledby="dropdownMenu">
+                <% _.each(data,function(e,i){%>
+                    <li>
+                        <a href="javascript:void 0;" class="actions-item <%=e.id%>" title="<%=e.title%>" value="<%=e.id%>">
+                            <%= e.text%>
+                        </a>
+                    </li>
+                    <%})%>
+            </ul>
     </script>
-    <div class="dropdown  popUp" style="position: absolute;z-index:999;">
+    <div id="popupView" style="">
     </div>
     <!-- jquery.ajax-cross-origin.min.js -->
     <script src="js/jquery.min.js"></script>
@@ -112,14 +113,15 @@
     <script src="js/backbone.js"></script>
     <script src="js/backbone.localStorage.js"></script>
     <script type="text/javascript">
-    //var domain = 'http://admadevwb8001:8001/api/html/elements';
+    var domain = 'http://admadevwb8001:8001/api/html/elements';
 
     $(document).ready(function() {
         var appModel = Backbone.Model.extend({
             defaults: function() {
                 return {
                     dataAPI: {
-                        'domain': 'http://localhost:3000/api/html/elements',
+                        // 'domain': 'http://localhost:3000/api/html/elements',
+                        'domain': 'http://admadevwb8001:8001/api/html/elements',
                         'createBtn': '',
                         'btnAction': {
                             'button': '/button/actions',
@@ -192,16 +194,6 @@
                 $('body').delegate('[tpl]', 'click', function(e) {
                     var tplType = $(this).attr('tpl');
                     var scrollTop = document.documentElement.scrollTop || window.pageYOffset || document.body.scrollTop;
-                    //var self = $(this).data('template');
-                    // $(this).data('popup', new Popup({
-                    //     type: self.option.type,
-                    //     css: {
-                    //         top: e.clientY +
-                    //             scrollTop + 'px',
-                    //         left: e.clientX + 'px'
-                    //     },
-                    //     template:self
-                    // }));
                     if ($(this).parent().hasClass('box-selected')) {
                         $(this).unwrap('.box-selected');
                     } else {
@@ -209,10 +201,11 @@
                     }
                     e.stopPropagation();
                     self.createPop(tplType, {
+                        position: 'absolute',
                         top: e.clientY +
                             scrollTop + 'px',
                         left: e.clientX + 'px'
-                    });
+                    }, $(this).parent().hasClass('box-selected'), $(this));
                 });
 
                 this.model.on('createBtnData', function(data) {
@@ -223,7 +216,7 @@
                     templateData[tplType] = data;
                     self.model.set('templateData', templateData);
                     self.createTemplate(tplType);
-                })
+                });
             },
             createTplhandler: function(tplType) {
                 var self = this;
@@ -328,14 +321,32 @@
                     title: data.title,
                 });
             },
-            showPopup: function() {
-                console.log(121)
+            hidePopUp: function() {
+                $('.dropdown-menu').hide();
             },
-            createPop: function(tplType, position) {
-                new popupView({
-                    tplType: tplType,
-                    position: position
-                });
+            showPopup: function(tplType, position) {
+                $('#pop-' + tplType).css(position).show();
+            },
+            createPop: function(tplType, position, isVisible, curDom) {
+                this.model.set('curDom', $(curDom));
+                this.model.set('curTplType', tplType);
+                var popview = this.model.get('popview') || {};
+                if (!popview[tplType]) {
+                    popview[tplType] = new popupView({
+                        tplType: tplType,
+                        position: position
+                    });
+                    popview[tplType].curDom = $(curDom)
+                } else {
+                    if (isVisible) {
+                        popview[tplType].curDom = $(curDom)
+                        this.showPopup(tplType, position);
+                    } else {
+                        popview[tplType].curDom = null;
+                        $('.dropdown-menu').hide();
+                    }
+                }
+                this.model.set('popview', popview);
             }
         });
 
@@ -363,34 +374,42 @@
                 this.model = new popupModel({
                     tplType: options.tplType
                 });
+                this.curDom = null;
                 var self = this;
-                this.model.on('actionsData', function(data) {
-                    var dom = self.popTemplate(data)
+                this.model.on('actionsData', function(data, tplType) {
+                    var dom = $(self.popTemplate({
+                        data: data,
+                        tplType: tplType
+                    })).css(self.position).show();
                     self.renderPop(dom);
                     self.model.off('actionsData');
                 });
+                this.bindEvents(options.tplType);
             },
             renderPop: function(dom) {
-                console.log(dom);
+                $('#popupView').append(dom);
             },
-            bindEvents: function() {
-                var self = this
-                $('#popupListView').delegate('a', 'click', function() {
+            bindEvents: function(tplType) {
+                var self = this;
+                $('#popupView').delegate('#pop-' + tplType + ' a', 'click', function() {
                     var method = $(this).attr('value').trim();
-                    console.log(method);
-                    self[method](self.option.template.dom);
-                    //self.hidePopUp();
+                    self[method](self.curDom.unwrap('.box-selected'));
+                    //self[method](self.option.template.dom);
+                    self.hidePopUp();
                 });
             },
+            hidePopUp: function() {
+                $('.dropdown-menu').hide();
+            },
             delete: function(dom) {
-                dom.parent().remove();
-                this.dom.remove();
+                dom.remove();
             },
             backgroundColor: function(dom) {
-                dom.css('backgroundColor', makeColor());
+                dom.css('backgroundColor', this.makeColor());
             },
             fontColor: function(dom) {
-                dom.css('color', makeColor());
+                console.log(dom);
+                dom.css('color', this.makeColor());
             },
             increaseFontSize: function(dom) {
                 fontSize = parseInt(fontSize) + 1;
@@ -399,14 +418,18 @@
             decreaseFontSize: function(dom) {
                 fontSize = parseInt(fontSize) - 1;
                 dom.css('fontSize', fontSize + 'px');
+            },
+            makeColor: function() {
+                return '#' + ('00000' + (Math.random() * 0x1000000 << 0).toString(16)).slice(-6);
             }
 
         });
 
         new appView({
             model: appModel,
+            ele: ''
         });
-
+        var fontSize = '11px';
     });
     </script>
 </body>
